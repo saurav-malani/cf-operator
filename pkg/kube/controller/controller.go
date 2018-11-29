@@ -7,10 +7,12 @@ import (
 
 	bdc "code.cloudfoundry.org/cf-operator/pkg/kube/apis/boshdeploymentcontroller/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/controller/boshdeployment"
+	"code.cloudfoundry.org/cf-operator/pkg/kube/controller/custompod"
 )
 
 var addToManagerFuncs = []func(*zap.SugaredLogger, manager.Manager) error{
 	boshdeployment.Add,
+	custompod.Add,
 }
 
 var addToSchemes = runtime.SchemeBuilder{

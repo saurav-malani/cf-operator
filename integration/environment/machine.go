@@ -34,6 +34,14 @@ func (m *Machine) WaitForPod(namespace string, name string) error {
 	})
 }
 
+// WaitForPodDelete blocks until the pod is running. It fails after the timeout.
+func (m *Machine) WaitForPodDelete(namespace string, name string) error {
+	return wait.PollImmediate(m.pollInterval, m.pollTimeout, func() (bool, error) {
+		found, err := m.PodRunning(namespace, name)
+		return !found, err
+	})
+}
+
 // PodRunning returns true if the pod by that name is in state running
 func (m *Machine) PodRunning(namespace string, name string) (bool, error) {
 	pod, err := m.Clientset.CoreV1().Pods(namespace).Get(name, v1.GetOptions{})
@@ -78,6 +86,15 @@ func (m *Machine) CreateConfigMap(namespace string, configMap corev1.ConfigMap) 
 	_, err := client.Create(&configMap)
 	return func() {
 		client.Delete(configMap.GetName(), &v1.DeleteOptions{})
+	}, err
+}
+
+// CreatePod ...
+func (m *Machine) CreatePod(namespace string, pod corev1.Pod) (TearDownFunc, error) {
+	client := m.Clientset.CoreV1().Pods(namespace)
+	_, err := client.Create(&pod)
+	return func() {
+		client.Delete(pod.GetName(), &v1.DeleteOptions{})
 	}, err
 }
 
