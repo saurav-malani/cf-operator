@@ -13,3 +13,12 @@ spec:
     singular: boshdeployment
   scope: Namespaced
   version: v1alpha1
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          properties:
+            manifest-ref:
+              type: string
+            ops-ref:
+              type: string
