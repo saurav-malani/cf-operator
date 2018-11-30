@@ -2,14 +2,14 @@ package custompod
 
 import (
 	"context"
-	"strconv"
 
-	bdm "code.cloudfoundry.org/cf-operator/pkg/bosh/manifest"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -33,6 +33,7 @@ func NewReconciler(log *zap.SugaredLogger, mgr manager.Manager, srf setReference
 		log:          log,
 		client:       mgr.GetClient(),
 		scheme:       mgr.GetScheme(),
+		recorder:     mgr.GetRecorder("CUSTOMPOD RECORDER"),
 		setReference: srf,
 	}
 }
@@ -71,6 +72,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 			return false
 		},
 	})
+
+	// Watch out for annotated secrets too
+	err = c.Watch(
+		&source.Kind{Type: &corev1.Secret{}},
+		&handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &corev1.Pod{},
+		},
+		&annotationPredicate{Annotation: "custompod"},
+	)
 	if err != nil {
 		return err
 	}
@@ -89,6 +100,7 @@ type ReconcileCustomPod struct {
 	scheme       *runtime.Scheme
 	setReference setReferenceFunc
 	log          *zap.SugaredLogger
+	recorder     record.EventRecorder
 }
 
 // Reconcile reads that state of the cluster and makes changes based on the state read
@@ -121,33 +133,26 @@ func (r *ReconcileCustomPod) Reconcile(request reconcile.Request) (reconcile.Res
 
 	r.log.Debugf("custom pod controller add triggered for %s", request.Name)
 
-	// Set instance as the owner and controller of generated objects:
-	// if err := r.setReference(instance, ...
+	// TODO check for our secrets?
+	r.recorder.Event(instance, corev1.EventTypeNormal, "noreason", "custompod event triggered")
+
+	secret := &corev1.Secret{}
+	err = r.client.Get(
+		context.TODO(),
+		types.NamespacedName{
+			Namespace: "default",
+			Name:      "asecret",
+		},
+		secret,
+	)
+
+	if err != nil {
+		r.log.Debugf("custom pod didn't find secret and requeues: %s", err)
+		return reconcile.Result{
+			Requeue: true,
+		}, nil
+	}
+	r.log.Debugf("secret: %#v", secret)
 
 	return reconcile.Result{}, nil
-}
-
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *bdm.Manifest, namespace string) *corev1.Pod {
-	ig := cr.InstanceGroups[0]
-	labels := map[string]string{
-		"app":  ig.Name,
-		"size": strconv.Itoa(ig.Instances),
-	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ig.Name + "-pod",
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
-	}
 }

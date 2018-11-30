@@ -12,12 +12,17 @@ var _ = Describe("Custom controller for core object", func() {
 
 	FContext("when correctly setup", func() {
 		AfterEach(func() {
-			msgs := env.AllLogMessages()
-			fmt.Println(msgs)
+			for _, msg := range env.AllLogMessages() {
+				fmt.Println(msg)
+			}
 		})
 
 		It("should notice pod events", func() {
-			tearDown, err := env.CreatePod(env.Namespace, env.CustomPod("custom-pod"))
+			tearDown, err := env.CreateSecret(env.Namespace, env.AnnotatedSecret("asecret"))
+			Expect(err).NotTo(HaveOccurred())
+			defer tearDown()
+
+			tearDown, err = env.CreatePod(env.Namespace, env.CustomPod("custom-pod"))
 			Expect(err).NotTo(HaveOccurred())
 			defer tearDown()
 

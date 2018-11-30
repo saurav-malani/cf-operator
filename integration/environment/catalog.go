@@ -33,6 +33,19 @@ func (c *Catalog) DefaultSecret(name string) corev1.Secret {
 	}
 }
 
+// AnnotatedSecret for tests
+func (c *Catalog) AnnotatedSecret(name string) corev1.Secret {
+	return corev1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name: name,
+			Annotations: map[string]string{
+				"custompod": "yes",
+			},
+		},
+		StringData: map[string]string{},
+	}
+}
+
 // DefaultPod for tests
 func (c *Catalog) DefaultPod(name string) corev1.Pod {
 	return corev1.Pod{
