@@ -66,9 +66,9 @@ func (m *Machine) WaitForExtendedStatefulSets(namespace string, labels string) e
 }
 
 // WaitForExtendedStatefulSetAvailable blocks until latest version is available. It fails after the timeout.
-func (m *Machine) WaitForExtendedStatefulSetAvailable(namespace string, name string) error {
+func (m *Machine) WaitForExtendedStatefulSetAvailable(namespace string, name string, version int) error {
 	return wait.PollImmediate(m.pollInterval, m.pollTimeout, func() (bool, error) {
-		return m.ExtendedStatefulSetAvailable(namespace, name)
+		return m.ExtendedStatefulSetAvailable(namespace, name, version)
 	})
 }
 
@@ -84,8 +84,10 @@ func (m *Machine) ExtendedStatefulSetExists(namespace string, labels string) (bo
 	return len(esss.Items) > 0, nil
 }
 
-// ExtendedStatefulSetAvailable returns true if at least one latest version pod is running
-func (m *Machine) ExtendedStatefulSetAvailable(namespace string, name string) (bool, error) {
+// ExtendedStatefulSetAvailable returns true if current version is available
+func (m *Machine) ExtendedStatefulSetAvailable(namespace string, name string, version int) (bool, error) {
+	latestVersion := version
+
 	fieldSelector := fields.Set{"metadata.name": name}.AsSelector()
 	esss, err := m.VersionedClientset.ExtendedstatefulsetV1alpha1().ExtendedStatefulSets(namespace).List(metav1.ListOptions{
 		FieldSelector: fieldSelector.String(),
@@ -104,10 +106,6 @@ func (m *Machine) ExtendedStatefulSetAvailable(namespace string, name string) (b
 		return false, nil
 	}
 
-	var latestVersion int
-	for latestVersion = range ess.Status.Versions {
-		break
-	}
 	for n := range ess.Status.Versions {
 		if n > latestVersion {
 			latestVersion = n

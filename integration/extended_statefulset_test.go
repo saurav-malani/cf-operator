@@ -32,7 +32,7 @@ var _ = Describe("ExtendedStatefulSet", func() {
 			ownedReferencesExtendedStatefulSet = env.OwnedReferencesExtendedStatefulSet(ownedRefEssName)
 		})
 
-		It("should create a statefulset and eventually a pod", func() {
+		It("should create a statefulSet and eventually a pod", func() {
 			// Create an ExtendedStatefulSet
 			var ess *essv1.ExtendedStatefulSet
 			ess, tearDown, err := env.CreateExtendedStatefulSet(env.Namespace, extendedStatefulSet)
@@ -45,7 +45,7 @@ var _ = Describe("ExtendedStatefulSet", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// check for extendedStatefulSet available
-			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName())
+			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName(), 1)
 			Expect(err).NotTo(HaveOccurred())
 
 			// check for extendedStatefulSet versions
@@ -56,7 +56,7 @@ var _ = Describe("ExtendedStatefulSet", func() {
 			}))
 		})
 
-		It("should update a statefulset", func() {
+		It("should update a statefulSet", func() {
 			// Create an ExtendedStatefulSet
 			var ess *essv1.ExtendedStatefulSet
 			ess, tearDown, err := env.CreateExtendedStatefulSet(env.Namespace, extendedStatefulSet)
@@ -69,7 +69,7 @@ var _ = Describe("ExtendedStatefulSet", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Check for extendedStatefulSet available
-			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName())
+			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName(), 1)
 			Expect(err).NotTo(HaveOccurred())
 
 			// check for extendedStatefulSet versions
@@ -90,8 +90,8 @@ var _ = Describe("ExtendedStatefulSet", func() {
 			err = env.WaitForPods(env.Namespace, "testpodupdated=yes")
 			Expect(err).NotTo(HaveOccurred())
 
-			// Check for extendedStatefulSet available
-			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName())
+			// check for extendedStatefulSet available
+			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName(), 2)
 			Expect(err).NotTo(HaveOccurred())
 
 			// check for extendedStatefulSet versions
@@ -120,7 +120,7 @@ var _ = Describe("ExtendedStatefulSet", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Check for extendedStatefulSet available
-			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName())
+			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName(), 1)
 			Expect(err).NotTo(HaveOccurred())
 
 			// check for extendedStatefulSet versions
@@ -219,7 +219,7 @@ var _ = Describe("ExtendedStatefulSet", func() {
 			originalSHA1 := ss.Spec.Template.GetAnnotations()[essv1.AnnotationConfigSHA1]
 
 			// Check for extendedStatefulSet available
-			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName())
+			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName(), 1)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Check for extendedStatefulSet versions
@@ -276,7 +276,7 @@ var _ = Describe("ExtendedStatefulSet", func() {
 			Expect(currentSHA1).ShouldNot(Equal(originalSHA1))
 
 			// Check for extendedStatefulSet available
-			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName())
+			err = env.WaitForExtendedStatefulSetAvailable(env.Namespace, ess.GetName(), 1)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Check for extendedStatefulSet versions
