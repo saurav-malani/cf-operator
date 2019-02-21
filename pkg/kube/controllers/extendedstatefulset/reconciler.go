@@ -693,6 +693,7 @@ func (r *ReconcileExtendedStatefulSet) removeOwnerReferences(ctx context.Context
 		if !reflect.DeepEqual(ownerRefs, child.GetOwnerReferences()) {
 			child.SetOwnerReferences(ownerRefs)
 			r.log.Debug("Removing child '", child.GetName(), "' from StatefulSet '", obj.Name, "' in namespace '", obj.Namespace, "'.")
+			// TODO Occur StorageError
 			err := r.client.Update(ctx, child)
 			if err != nil {
 				r.log.Error("Could not update '", child.GetName(), "': ", err)
@@ -729,6 +730,47 @@ func (r *ReconcileExtendedStatefulSet) updateOwnerReference(ctx context.Context,
 // handleDelete removes all existing Owner References pointing to ExtendedStatefulSet
 // and object's Finalizers
 func (r *ReconcileExtendedStatefulSet) handleDelete(ctx context.Context, extendedStatefulSet *essv1a1.ExtendedStatefulSet) (reconcile.Result, error) {
+	r.log.Debug("Considering existing Owner References of ExtendedStatefulSet '", extendedStatefulSet.Name, "'.")
+
+	// Fetch all ConfigMaps and Secrets with an OwnerReference pointing to the object
+	existingConfigs, err := r.listConfigsOwnedBy(ctx, extendedStatefulSet)
+	if err != nil {
+		r.log.Error("Could not retrieve all ConfigMaps and Secrets owned by ExtendedStatefulSet '", extendedStatefulSet.Name, "': ", err)
+		return reconcile.Result{}, err
+	}
+
+	// Remove StatefulSet OwnerReferences from the existingConfigs
+	err = r.removeOwnerReferences(ctx, extendedStatefulSet, existingConfigs)
+	if err != nil {
+		r.log.Error("Could not remove OwnerReferences pointing to ExtendedStatefulSet '", extendedStatefulSet.Name, "': ", err)
+		return reconcile.Result{}, err
+	}
+
+	// Remove the object's Finalizer and update if necessary
+	copy := extendedStatefulSet.DeepCopy()
+	copy.RemoveFinalizer()
+	if !reflect.DeepEqual(extendedStatefulSet, copy) {
+		r.log.Debug("Removing finalizer from ExtendedStatefulSet '", copy.Name, "'.")
+		key := types.NamespacedName{Namespace: copy.GetNamespace(), Name: copy.GetName()}
+		err := r.client.Get(ctx, key, copy)
+		if err != nil {
+			return reconcile.Result{}, errors.Wrapf(err, "Could not get ExtendedStatefulSet ''%s'", copy.GetName())
+		}
+
+		copy.RemoveFinalizer()
+
+		err = r.client.Update(ctx, copy)
+		if err != nil {
+			r.log.Error("Could not remove finalizer from ExtendedStatefulSet '", copy.GetName(), "': ", err)
+			return reconcile.Result{}, err
+		}
+	}
+	return reconcile.Result{}, nil
+}
+
+// exists removes all existing Owner References pointing to ExtendedStatefulSet
+// and object's Finalizers
+func (r *ReconcileExtendedStatefulSet) exists(ctx context.Context, extendedStatefulSet *essv1a1.ExtendedStatefulSet) (reconcile.Result, error) {
 	r.log.Debug("Considering existing Owner References of ExtendedStatefulSet '", extendedStatefulSet.Name, "'.")
 
 	// Fetch all ConfigMaps and Secrets with an OwnerReference pointing to the object

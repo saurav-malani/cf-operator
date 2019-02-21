@@ -15,4 +15,6 @@ bin/apply-crds
 kubectl get customresourcedefinitions
 kubectl create namespace "$TEST_NAMESPACE"
 
+set +e
 ginkgo integration/
+set -e

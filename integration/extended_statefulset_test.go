@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ExtendedStatefulSet", func() {
+var _ = FDescribe("ExtendedStatefulSet", func() {
 	var (
 		extendedStatefulSet                essv1.ExtendedStatefulSet
 		wrongExtendedStatefulSet           essv1.ExtendedStatefulSet
