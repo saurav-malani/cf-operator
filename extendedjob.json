@@ -1,0 +1,78 @@
+{
+  "apiVersion": "apiextensions.k8s.io/v1beta1",
+  "kind": "CustomResourceDefinition",
+  "metadata": {
+    "name": "extendedjobs.fissile.cloudfoundry.org",
+    "annotations": {
+      "helm.sh/hook": "crd-install"
+    }
+  },
+  "spec": {
+    "group": "fissile.cloudfoundry.org",
+    "names": {
+      "kind": "ExtendedJob",
+      "listKind": "ExtendedJobList",
+      "plural": "extendedjobs",
+      "singular": "extendedjob"
+    },
+    "scope": "Namespaced",
+    "version": "v1alpha1",
+    "validation": {
+      "openAPIV3Schema": {
+        "properties": {
+          "spec": {
+            "required": ["template"],
+            "properties": {
+              "output": {
+                "type": "object",
+                "required": ["secretRef"],
+                "properties": {
+                  "secretRef": {
+                    "type": "string"
+                  },
+                "overwrite": {
+                  "type": "bool"
+                },
+                "writeOnFailure": {
+                  "type": "bool"
+                }
+                }
+              },
+              "run": {
+                "type": "string",
+                "enum": ["manually", "once", "now"]
+              },
+              "triggers": {
+                "type": "object",
+                "required": ["when"],
+                "properties": {
+                  "when": {
+                    "type": "string",
+                    "enum": ["ready", "notready", "created", "deleted"]
+                  },
+                  "selector": {
+                    "type": "object",
+                    "properties": {
+                      "matchLabels": {
+                        "type": "object"
+                      },
+                      "matchExpressions": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              },
+              "template": {
+                "type": "object"
+              },
+              "updateOnConfigChange": {
+                "type": "bool"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
